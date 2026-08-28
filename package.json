@@ -1,0 +1,103 @@
+{
+  "name": "nats-tree",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Subscribe to a NATS server and inspect subjects as a searchable tree.",
+  "homepage": "https://nats.io",
+  "author": "NatsTree",
+  "type": "module",
+  "main": "out/main.js",
+  "scripts": {
+    "dev": "concurrently -n server,client -c cyan,magenta \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:client": "vite",
+    "dev:server": "tsx watch server/index.ts",
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "build:electron": "esbuild electron/main.ts --bundle --platform=node --format=esm --external:electron --packages=external --outfile=out/main.js",
+    "start": "tsx server/index.ts",
+    "preview": "vite preview",
+    "electron:dev": "npm run build:electron && concurrently -k -n web,electron -c cyan,green \"npm run dev\" \"wait-on http://127.0.0.1:5173 && electron .\"",
+    "dist": "npm run build && npm run build:electron && electron-builder --linux AppImage deb && npm run dist:win",
+    "dist:linux": "npm run build && npm run build:electron && electron-builder --linux AppImage deb",
+    "dist:win": "npm run build && npm run build:electron && electron-builder --win zip && bash scripts/make-win-installer.sh",
+    "dist:mac": "npm run build && npm run build:electron && electron-builder --mac dmg zip"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "nats": "^2.29.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^26.4.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@types/ws": "^8.18.1",
+    "@vitejs/plugin-react": "^4.5.2",
+    "concurrently": "^9.1.2",
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12",
+    "esbuild": "^0.25.8",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "wait-on": "^8.0.4"
+  },
+  "build": {
+    "appId": "com.natstree.app",
+    "productName": "NatsTree",
+    "copyright": "NatsTree",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "out/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Network",
+      "maintainer": "NatsTree",
+      "icon": "build/icon.png"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.utilities",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "NatsTree"
+    }
+  }
+}

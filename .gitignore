@@ -1,0 +1,7 @@
+node_modules
+dist
+out
+release
+.win-installer-tools
+*.local
+.DS_Store
