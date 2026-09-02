@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "description": "Subscribe to a NATS server and inspect subjects as a searchable tree.",
-  "homepage": "https://nats.io",
+  "homepage": "https://github.com/vattaylor/NatsTree",
   "author": "NatsTree",
   "type": "module",
   "main": "out/main.js",
@@ -19,13 +19,14 @@
     "dist": "npm run build && npm run build:electron && electron-builder --linux AppImage deb && npm run dist:win",
     "dist:linux": "npm run build && npm run build:electron && electron-builder --linux AppImage deb",
     "dist:win": "npm run build && npm run build:electron && electron-builder --win zip && bash scripts/make-win-installer.sh",
-    "dist:mac": "npm run build && npm run build:electron && electron-builder --mac dmg zip"
+    "dist:mac": "npm run build && npm run build:electron && electron-builder --mac zip dmg"
   },
   "dependencies": {
     "express": "^5.1.0",
     "nats": "^2.29.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "tsx": "^4.20.3",
     "ws": "^8.18.3"
   },
   "devDependencies": {
@@ -36,10 +37,9 @@
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^4.5.2",
     "concurrently": "^9.1.2",
-    "electron": "^37.2.6",
-    "electron-builder": "^26.0.12",
+    "electron": "^44.1.1",
+    "electron-builder": "^26.15.3",
     "esbuild": "^0.25.8",
-    "tsx": "^4.20.3",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "wait-on": "^8.0.4"

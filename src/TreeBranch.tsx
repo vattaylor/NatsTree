@@ -1,5 +1,5 @@
 import { memo, useMemo } from "react";
-import { formatValue, nodeMatchesQuery, sortedChildren, type TreeNode } from "./tree";
+import { formatValue, nodeMatchesQuery, nodeMatchesSelection, sortedChildren, type TreeNode } from "./tree";
 
 type Props = {
   node: TreeNode;
@@ -10,6 +10,7 @@ type Props = {
   logged: Set<string>;
   expanded: Set<string>;
   flashed: Set<string>;
+  showSelectedOnly: boolean;
   onToggleExpand: (path: string) => void;
   onSelect: (path: string) => void;
   onToggleLog: (path: string) => void;
@@ -24,17 +25,21 @@ export const TreeBranch = memo(function TreeBranch({
   logged,
   expanded,
   flashed,
+  showSelectedOnly,
   onToggleExpand,
   onSelect,
   onToggleLog,
 }: Props) {
   const children = useMemo(() => {
-    return sortedChildren(node).filter((child) => nodeMatchesQuery(child, query));
-  }, [node, node.children.size, query, version]);
+    return sortedChildren(node).filter((child) => {
+      if (showSelectedOnly && !nodeMatchesSelection(child, logged)) return false;
+      return nodeMatchesQuery(child, query);
+    });
+  }, [node, node.children.size, query, version, showSelectedOnly, logged]);
 
   const isRoot = node.path === "";
   const hasKids = node.children.size > 0;
-  const open = isRoot || query.length > 0 || expanded.has(node.path);
+  const open = isRoot || query.length > 0 || showSelectedOnly || expanded.has(node.path);
   const checked = logged.has(node.path);
   const isSelected = selectedPath === node.path;
 
@@ -89,6 +94,7 @@ export const TreeBranch = memo(function TreeBranch({
             logged={logged}
             expanded={expanded}
             flashed={flashed}
+            showSelectedOnly={showSelectedOnly}
             onToggleExpand={onToggleExpand}
             onSelect={onSelect}
             onToggleLog={onToggleLog}

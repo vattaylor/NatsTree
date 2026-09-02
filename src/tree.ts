@@ -13,9 +13,12 @@ export type TreeNode = {
   history: HistoryEntry[];
   hits: number;
   natsSubject: string;
+  historyLimit: number;
 };
 
 export const HISTORY_LIMIT = 10;
+export const HISTORY_LIMITS = [10, 100, 1000, 10000, 50000, 100000] as const;
+export type HistoryLimit = (typeof HISTORY_LIMITS)[number];
 
 export function createRoot(): TreeNode {
   return {
@@ -28,6 +31,7 @@ export function createRoot(): TreeNode {
     history: [],
     hits: 0,
     natsSubject: "",
+    historyLimit: HISTORY_LIMIT,
   };
 }
 
@@ -45,6 +49,7 @@ function ensureChild(parent: TreeNode, name: string, created: string[]): TreeNod
       history: [],
       hits: 0,
       natsSubject: "",
+      historyLimit: HISTORY_LIMIT,
     };
     parent.children.set(name, child);
     created.push(path);
@@ -59,7 +64,8 @@ function setLeaf(node: TreeNode, value: unknown, timestamp: number, natsSubject:
   node.hits += 1;
   node.natsSubject = natsSubject;
   node.history.push({ value, timestamp });
-  if (node.history.length > HISTORY_LIMIT) node.history.shift();
+  const cap = node.historyLimit || HISTORY_LIMIT;
+  if (node.history.length > cap) node.history.splice(0, node.history.length - cap);
 }
 
 function ingestValue(
@@ -184,4 +190,54 @@ export function pathIsLogged(path: string, selected: Set<string>): boolean {
     if (path === prefix || path.startsWith(prefix + ".")) return true;
   }
   return false;
+}
+
+export function nodeMatchesSelection(node: TreeNode, selected: Set<string>): boolean {
+  if (selected.size === 0) return false;
+  if (pathIsLogged(node.path, selected)) return true;
+  for (const sel of selected) {
+    if (!node.path || sel.startsWith(node.path + ".")) return true;
+  }
+  return false;
+}
+
+export type ExportedNode = {
+  name: string;
+  path: string;
+  value?: unknown;
+  natsSubject?: string;
+  hits?: number;
+  lastUpdated?: string;
+  children?: ExportedNode[];
+};
+
+export function exportTree(node: TreeNode): ExportedNode[] {
+  return sortedChildren(node).map(exportOne);
+}
+
+function exportOne(node: TreeNode): ExportedNode {
+  const out: ExportedNode = { name: node.name, path: node.path };
+  if (node.hasValue) {
+    out.value = node.value;
+    out.natsSubject = node.natsSubject;
+    out.hits = node.hits;
+    if (node.lastUpdated) out.lastUpdated = new Date(node.lastUpdated).toISOString();
+  }
+  if (node.children.size) out.children = sortedChildren(node).map(exportOne);
+  return out;
+}
+
+export function formatInterval(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) return "—";
+  if (ms < 1) return `${(ms * 1000).toFixed(0)} µs`;
+  if (ms < 1000) return `${ms.toFixed(ms < 10 ? 2 : 0)} ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(ms < 10_000 ? 2 : 1)} s`;
+  return `${(ms / 60_000).toFixed(2)} min`;
+}
+
+export function averageInterval(history: HistoryEntry[]): number | null {
+  if (history.length < 2) return null;
+  let sum = 0;
+  for (let i = 1; i < history.length; i++) sum += history[i].timestamp - history[i - 1].timestamp;
+  return sum / (history.length - 1);
 }

@@ -1,9 +1,21 @@
-import { useMemo, useState } from "react";
-import { formatValue, isNumericValue, type TreeNode } from "./tree";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  HISTORY_LIMITS,
+  averageInterval,
+  formatInterval,
+  formatValue,
+  isNumericValue,
+  type HistoryLimit,
+  type TreeNode,
+} from "./tree";
 import { ValueChart } from "./ValueChart";
+
+const ROW = 28;
+const VISIBLE = 24;
 
 type Props = {
   node: TreeNode | null;
+  onHistoryLimitChange: (path: string, limit: HistoryLimit) => void;
 };
 
 function ago(ts: number) {
@@ -16,8 +28,17 @@ function ago(ts: number) {
   return `${h}h ${m % 60}m ago`;
 }
 
-export function NodeDetail({ node }: Props) {
+function asLimit(value: number): HistoryLimit {
+  return (HISTORY_LIMITS as readonly number[]).includes(value)
+    ? (value as HistoryLimit)
+    : HISTORY_LIMITS[0];
+}
+
+export function NodeDetail({ node, onHistoryLimitChange }: Props) {
   const [mode, setMode] = useState<"table" | "graph">("table");
+  const [scrollTop, setScrollTop] = useState(0);
+  const scroller = useRef<HTMLDivElement>(null);
+
   const numericPoints = useMemo(() => {
     if (!node) return [];
     return node.history
@@ -25,15 +46,27 @@ export function NodeDetail({ node }: Props) {
       .map((h) => ({ t: h.timestamp, v: h.value as number }));
   }, [node, node?.history, node?.hits]);
 
+  const avg = useMemo(() => (node ? averageInterval(node.history) : null), [node, node?.hits, node?.history.length]);
+
+  useEffect(() => {
+    setScrollTop(0);
+    if (scroller.current) scroller.current.scrollTop = 0;
+  }, [node?.path]);
+
   if (!node) {
     return (
-      <div className="placeholder">
-        Select a leaf in the tree to inspect its last 10 values, timestamps, and (for numbers) a graph.
+      <div className="detail-body">
+        <div className="placeholder">
+          Select a leaf in the tree to inspect its values, timestamps, and (for numbers) a graph.
+        </div>
       </div>
     );
   }
 
   const canGraph = numericPoints.length > 0 || isNumericValue(node.value);
+  const count = node.history.length;
+  const start = Math.max(0, Math.floor(scrollTop / ROW) - 4);
+  const limit = asLimit(node.historyLimit);
 
   return (
     <div className="detail-body">
@@ -51,13 +84,34 @@ export function NodeDetail({ node }: Props) {
             : "—"}
         </dd>
         <dt>Hits</dt>
-        <dd>{node.hits}</dd>
+        <dd>{node.hits.toLocaleString()}</dd>
+        <dt>Avg interval</dt>
+        <dd>{avg == null ? "Need two samples" : formatInterval(avg)}</dd>
       </dl>
+
+      <div className="history-toolbar">
+        <label htmlFor="history-limit">Keep last</label>
+        <select
+          id="history-limit"
+          value={limit}
+          onChange={(e) => onHistoryLimitChange(node.path, asLimit(Number(e.target.value)))}
+        >
+          {HISTORY_LIMITS.map((n) => (
+            <option key={n} value={n}>
+              {n.toLocaleString()}
+            </option>
+          ))}
+        </select>
+        <span className="meta">
+          {count.toLocaleString()} stored
+          {count < limit && node.hits > count ? " (older samples were discarded)" : ""}
+        </span>
+      </div>
 
       {canGraph && (
         <div className="tabs">
           <button className={`tab${mode === "table" ? " on" : ""}`} onClick={() => setMode("table")}>
-            Last 10
+            History
           </button>
           <button className={`tab${mode === "graph" ? " on" : ""}`} onClick={() => setMode("graph")}>
             Graph
@@ -68,29 +122,38 @@ export function NodeDetail({ node }: Props) {
       {mode === "graph" && canGraph ? (
         <ValueChart points={numericPoints} />
       ) : (
-        <table className="history">
-          <thead>
-            <tr>
-              <th>When</th>
-              <th>Age</th>
-              <th>Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[...node.history].reverse().map((entry, i) => (
-              <tr key={`${entry.timestamp}-${i}`}>
-                <td>{new Date(entry.timestamp).toLocaleString()}</td>
-                <td>{ago(entry.timestamp)}</td>
-                <td>{formatValue(entry.value)}</td>
-              </tr>
-            ))}
-            {node.history.length === 0 && (
-              <tr>
-                <td colSpan={3}>No samples yet.</td>
-              </tr>
+        <div className="history-virt">
+          <div className="history-head">
+            <span>When</span>
+            <span>Age</span>
+            <span>Value</span>
+          </div>
+          <div
+            className="history-body"
+            ref={scroller}
+            onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+          >
+            {count === 0 ? (
+              <div className="hint">No samples yet.</div>
+            ) : (
+              <div className="log-table-wrap">
+                <div className="log-spacer" style={{ height: count * ROW }} />
+                <div className="log-window" style={{ top: start * ROW }}>
+                  {Array.from({ length: Math.min(VISIBLE, count - start) }, (_, i) => {
+                    const entry = node.history[count - 1 - (start + i)];
+                    return (
+                      <div className="history-row" key={`${entry.timestamp}-${start + i}`}>
+                        <span>{new Date(entry.timestamp).toLocaleString()}</span>
+                        <span>{ago(entry.timestamp)}</span>
+                        <span title={formatValue(entry.value)}>{formatValue(entry.value)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             )}
-          </tbody>
-        </table>
+          </div>
+        </div>
       )}
     </div>
   );

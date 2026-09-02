@@ -1,0 +1,9 @@
+node_modules
+dist
+out
+release
+.git
+.win-installer-tools
+*.local
+.DS_Store
+electron

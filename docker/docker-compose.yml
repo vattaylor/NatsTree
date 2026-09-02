@@ -1,0 +1,12 @@
+services:
+  natstree:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8888:8888"
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8888"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

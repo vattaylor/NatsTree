@@ -30,7 +30,8 @@ html,
 body,
 #root {
   margin: 0;
-  min-height: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -41,7 +42,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -50,7 +52,8 @@ button {
 }
 
 .app {
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr;
 }
@@ -98,6 +101,22 @@ button {
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.github-link {
+  margin-left: 4px;
+  align-self: center;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+  background: var(--bg-panel);
+}
+
+.github-link:hover {
+  border-color: var(--accent-dim);
 }
 
 .conn {
@@ -175,8 +194,15 @@ button {
   align-self: auto;
 }
 
+.btn.on {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
 .tree-tools {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-top: 8px;
 }
@@ -224,6 +250,7 @@ button {
   display: grid;
   grid-template-columns: minmax(280px, 1.05fr) minmax(320px, 0.95fr) minmax(340px, 1.1fr);
   min-height: 0;
+  overflow: hidden;
 }
 
 .panel {
@@ -246,6 +273,7 @@ button {
   gap: 12px;
   align-items: end;
   border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
 }
 
 .panel-head h2 {
@@ -416,7 +444,9 @@ button {
 }
 
 .detail-body {
-  padding: 16px 18px 28px;
+  padding: 16px 18px 16px;
+  display: flex;
+  flex-direction: column;
 }
 
 .kv {
@@ -424,7 +454,8 @@ button {
   grid-template-columns: 120px 1fr;
   gap: 8px 12px;
   font-size: 13px;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
 }
 
 .kv dt {
@@ -450,6 +481,7 @@ button {
   display: flex;
   gap: 6px;
   margin: 8px 0 14px;
+  flex-shrink: 0;
 }
 
 .tab {
@@ -466,40 +498,168 @@ button {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
-.history {
-  width: 100%;
-  border-collapse: collapse;
+.history-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.history-toolbar label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+}
+
+.history-toolbar select {
+  background: var(--bg-inset);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 6px 8px;
   font-family: "IBM Plex Mono", monospace;
   font-size: 12px;
 }
 
-.history th {
-  text-align: left;
+.history-toolbar .meta {
   color: var(--faint);
-  font-weight: 500;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+}
+
+.history-virt {
+  flex: 1;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+}
+
+.history-head,
+.history-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.2fr) 90px minmax(80px, 1fr);
+  gap: 8px;
+  padding: 0 10px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+}
+
+.history-head {
+  flex-shrink: 0;
+  color: var(--faint);
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 6px 8px;
+  padding-top: 8px;
+  padding-bottom: 6px;
   border-bottom: 1px solid var(--line);
 }
 
-.history td {
-  padding: 3px 8px;
+.history-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.history-row {
+  height: 28px;
+  align-items: center;
   border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
-  vertical-align: top;
+}
+
+.history-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logger {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.log-filter {
+  padding: 8px 12px 0;
+  flex-shrink: 0;
+}
+
+.log-filter .search {
+  margin-top: 0;
 }
 
 .chart-wrap {
+  display: block;
+  width: 100%;
   background: var(--bg-inset);
   border: 1px solid var(--line);
   padding: 10px 8px 4px;
+  text-align: left;
 }
 
 .chart-wrap svg {
   width: 100%;
   height: 220px;
   display: block;
+  pointer-events: none;
+}
+
+.chart-clickable {
+  cursor: zoom-in;
+}
+
+.chart-clickable:hover {
+  border-color: var(--accent-dim);
+}
+
+.chart-expand-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.chart-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  background: var(--bg);
+}
+
+.chart-overlay-plot {
+  position: absolute;
+  inset: 0;
+}
+
+.chart-overlay-plot svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.chart-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 1;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-panel);
+  color: var(--text);
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.chart-close:hover {
+  border-color: var(--accent-dim);
 }
 
 .chart-empty {
@@ -529,6 +689,9 @@ button {
   flex-wrap: wrap;
   gap: 6px;
   padding: 10px 12px 0;
+  flex-shrink: 0;
+  max-height: 72px;
+  overflow: auto;
 }
 
 .chip {
@@ -585,6 +748,7 @@ button {
   padding-top: 8px;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
 }
 
 .log-row {
@@ -610,8 +774,17 @@ button {
 }
 
 @media (max-width: 1100px) {
+  html,
+  body,
+  #root,
+  .app {
+    height: auto;
+    overflow: auto;
+  }
+
   .workspace {
     grid-template-columns: 1fr;
+    overflow: visible;
   }
 
   .panel {

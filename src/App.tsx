@@ -3,12 +3,15 @@ import { LoggerPanel } from "./LoggerPanel";
 import { NodeDetail } from "./NodeDetail";
 import { TreeBranch } from "./TreeBranch";
 import {
+  HISTORY_LIMIT,
   collectBranchPaths,
   countLeaves,
   createRoot,
+  exportTree,
   findNode,
   ingestMessage,
   pathIsLogged,
+  type HistoryLimit,
   type TreeNode,
 } from "./tree";
 import type { LogEntry, NatsMessage } from "./types";
@@ -37,6 +40,8 @@ export default function App() {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [logged, setLogged] = useState<Set<string>>(() => new Set());
   const [flashed, setFlashed] = useState<Set<string>>(() => new Set());
+  const [showSelectedOnly, setShowSelectedOnly] = useState(false);
+  const selectedPathRef = useRef<string | null>(null);
 
   const flush = useCallback(() => {
     raf.current = 0;
@@ -126,6 +131,47 @@ export default function App() {
     });
   }, []);
 
+  const trimHistory = useCallback((path: string, limit: number) => {
+    const node = findNode(rootRef.current, path);
+    if (!node) return;
+    node.historyLimit = limit;
+    if (node.history.length > limit) node.history.splice(0, node.history.length - limit);
+  }, []);
+
+  const onSelect = useCallback(
+    (path: string) => {
+      const prev = selectedPathRef.current;
+      if (prev && prev !== path) trimHistory(prev, HISTORY_LIMIT);
+      selectedPathRef.current = path;
+      setSelectedPath(path);
+    },
+    [trimHistory],
+  );
+
+  const onHistoryLimitChange = useCallback(
+    (path: string, limit: HistoryLimit) => {
+      trimHistory(path, limit);
+      setTick((n) => n + 1);
+    },
+    [trimHistory],
+  );
+
+  const exportStructure = useCallback(() => {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      messages: msgCountRef.current,
+      leaves: countLeaves(rootRef.current),
+      tree: exportTree(rootRef.current),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `natstree-structure-${new Date().toISOString().replaceAll(":", "")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, []);
+
   const start = () => {
     connect({
       host: host.trim() || "127.0.0.1",
@@ -159,6 +205,14 @@ export default function App() {
             <h1>NatsTree</h1>
             <span>Subscribe · inspect · log</span>
           </div>
+          <a
+            className="github-link"
+            href="https://github.com/vattaylor/NatsTree"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub
+          </a>
         </div>
         <form
           className="conn"
@@ -257,6 +311,22 @@ export default function App() {
                 >
                   Collapse all
                 </button>
+                <button
+                  className={`btn small${showSelectedOnly ? " on" : ""}`}
+                  type="button"
+                  onClick={() => setShowSelectedOnly((v) => !v)}
+                  disabled={rootRef.current.children.size === 0}
+                >
+                  Show selected
+                </button>
+                <button
+                  className="btn small"
+                  type="button"
+                  onClick={exportStructure}
+                  disabled={rootRef.current.children.size === 0}
+                >
+                  Export tree
+                </button>
               </div>
               <input
                 className="search"
@@ -273,6 +343,11 @@ export default function App() {
                 payloads unfold into this tree. Use host <strong>demo</strong> to preview without a
                 server.
               </div>
+            ) : showSelectedOnly && logged.size === 0 ? (
+              <div className="placeholder">
+                Tick one or more nodes, then use <strong>Show selected</strong> to hide everything
+                else.
+              </div>
             ) : (
               <TreeBranch
                 node={rootRef.current}
@@ -283,8 +358,9 @@ export default function App() {
                 logged={logged}
                 expanded={expanded}
                 flashed={flashed}
+                showSelectedOnly={showSelectedOnly}
                 onToggleExpand={toggleExpand}
-                onSelect={setSelectedPath}
+                onSelect={onSelect}
                 onToggleLog={toggleLog}
               />
             )}
@@ -296,7 +372,7 @@ export default function App() {
             <h2>Value</h2>
             <span className="meta">{selectedPath ?? "nothing selected"}</span>
           </div>
-          <NodeDetail node={selectedNode} />
+          <NodeDetail node={selectedNode} onHistoryLimitChange={onHistoryLimitChange} />
         </section>
 
         <section className="panel">

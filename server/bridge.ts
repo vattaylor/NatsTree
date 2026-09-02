@@ -199,7 +199,7 @@ function attachBridge(server: http.Server) {
 
 export function startServer(options: StartServerOptions = {}): Promise<RunningServer> {
   const port = options.port ?? Number(process.env.PORT ?? 3847);
-  const host = options.host ?? "127.0.0.1";
+  const host = options.host ?? process.env.HOST ?? "127.0.0.1";
   const distDir =
     options.distDir ?? path.join(path.dirname(fileURLToPath(import.meta.url)), "../dist");
 

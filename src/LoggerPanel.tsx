@@ -17,21 +17,35 @@ function csvEscape(value: string) {
   return value;
 }
 
+function matchesFilter(entry: LogEntry, query: string) {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  if (entry.path.toLowerCase().includes(q)) return true;
+  if (entry.subject.toLowerCase().includes(q)) return true;
+  return formatValue(entry.value).toLowerCase().includes(q);
+}
+
 export function LoggerPanel({ getEntries, version, selected, onRemove, onClear }: Props) {
   const scroller = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
+  const [filter, setFilter] = useState("");
   const entries = getEntries();
-  const count = entries.length;
+  const filtered = useMemo(
+    () => (filter.trim() ? entries.filter((e) => matchesFilter(e, filter.trim())) : entries),
+    [entries, filter, version],
+  );
+  const count = filtered.length;
+  const total = entries.length;
 
   const start = Math.max(0, Math.floor(scrollTop / ROW) - 6);
   const visible = 48;
   const slice = useMemo(() => {
     const rows: LogEntry[] = [];
     for (let i = start; i < Math.min(count, start + visible); i++) {
-      rows.push(entries[count - 1 - i]);
+      rows.push(filtered[count - 1 - i]);
     }
     return rows;
-  }, [entries, start, count, visible, version]);
+  }, [filtered, start, count, visible, version]);
 
   const download = useCallback(() => {
     const rows = getEntries();
@@ -57,24 +71,37 @@ export function LoggerPanel({ getEntries, version, selected, onRemove, onClear }
   const status =
     selected.length === 0
       ? "No branches selected"
-      : `${selected.length} branch${selected.length === 1 ? "" : "es"} · ${count.toLocaleString()} recorded`;
+      : `${selected.length} branch${selected.length === 1 ? "" : "es"} · ${total.toLocaleString()} recorded`;
 
   return (
-    <>
+    <div className="logger">
       <div className="panel-head">
         <div>
           <h2>Logger</h2>
           <div className="meta">{status}</div>
         </div>
         <div className="log-controls">
-          <span className="count-chip">{count.toLocaleString()} logs</span>
-          <button className="btn" onClick={download} disabled={count === 0}>
+          <span className="count-chip">{total.toLocaleString()} logs</span>
+          <button className="btn" onClick={download} disabled={total === 0}>
             Download CSV
           </button>
-          <button className="btn danger" onClick={onClear} disabled={count === 0}>
+          <button className="btn danger" onClick={onClear} disabled={total === 0}>
             Clear
           </button>
         </div>
+      </div>
+
+      <div className="log-filter">
+        <input
+          className="search"
+          value={filter}
+          onChange={(e) => {
+            setFilter(e.target.value);
+            setScrollTop(0);
+            if (scroller.current) scroller.current.scrollTop = 0;
+          }}
+          placeholder="Filter path, subject, or value…"
+        />
       </div>
 
       {selected.length > 0 && (
@@ -92,8 +119,10 @@ export function LoggerPanel({ getEntries, version, selected, onRemove, onClear }
 
       {selected.length === 0 ? (
         <p className="hint">Tick any node in the tree to log that branch without a record limit.</p>
-      ) : count === 0 ? (
+      ) : total === 0 ? (
         <p className="hint">Waiting for matching messages…</p>
+      ) : count === 0 ? (
+        <p className="hint">No log rows match this filter.</p>
       ) : (
         <>
           <div className="log-head">
@@ -123,6 +152,6 @@ export function LoggerPanel({ getEntries, version, selected, onRemove, onClear }
           </div>
         </>
       )}
-    </>
+    </div>
   );
 }
