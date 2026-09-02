@@ -2,7 +2,7 @@
 
 NatsTree is a desktop and web app for watching a [NATS](https://nats.io) server. It subscribes to every subject (`>`), turns messages into a searchable tree, and lets you inspect live values, history, graphs, and unlimited CSV logs.
 
-Source: [github.com/vattaylor/NatsTree](https://github.com/vattaylor/NatsTree).
+Source: [github.com/vattaylor/NatsTree](https://github.com/vattaylor/NatsTree). Live demo: [vattaylor.github.io/NatsTree](https://vattaylor.github.io/NatsTree/).
 
 Browsers cannot speak NATS TCP, so NatsTree runs a small local bridge that opens the NATS connection for the UI.
 
@@ -199,6 +199,14 @@ npm run dist             # Linux + Windows packages
 ```
 
 The web UI talks to a local bridge on port `3847`. The packaged desktop app starts that bridge automatically.
+
+---
+
+## GitHub Pages
+
+The static UI is published at [https://vattaylor.github.io/NatsTree/](https://vattaylor.github.io/NatsTree/). Use **Server** `demo` and **Connect** — GitHub Pages cannot open a NATS TCP connection. For a real server, run the desktop app or the Docker web service.
+
+Pushes to `main` build and deploy Pages via `.github/workflows/pages.yml`. In the GitHub repo, set **Settings → Pages → Source** to **GitHub Actions** if the site is not live yet.
 
 ---
 
