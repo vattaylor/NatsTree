@@ -28,7 +28,9 @@ export default function App() {
   const pendingFlash = useRef<Set<string>>(new Set());
   const pendingExpand = useRef<string[]>([]);
 
-  const [host, setHost] = useState("127.0.0.1");
+  const [host, setHost] = useState(() =>
+    import.meta.env.VITE_STATIC === "true" ? "demo" : "127.0.0.1",
+  );
   const [port, setPort] = useState("4222");
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
@@ -213,6 +215,16 @@ export default function App() {
           >
             GitHub
           </a>
+          {import.meta.env.VITE_STATIC !== "true" && (
+            <a
+              className="github-link"
+              href="https://vattaylor.github.io/NatsTree/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Live demo
+            </a>
+          )}
         </div>
         <form
           className="conn"
