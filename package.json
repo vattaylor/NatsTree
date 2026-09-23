@@ -1,7 +1,7 @@
 {
   "name": "nats-tree",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Subscribe to a NATS server and inspect subjects as a searchable tree.",
   "homepage": "https://github.com/vattaylor/NatsTree",
   "author": "NatsTree",
@@ -24,6 +24,7 @@
   "dependencies": {
     "express": "^5.1.0",
     "nats": "^2.29.3",
+    "nats.ws": "^1.30.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "tsx": "^4.20.3",

@@ -8,6 +8,8 @@ type Props = {
   getEntries: () => LogEntry[];
   version: number;
   selected: string[];
+  nextFlag: number;
+  onFlag: () => void;
   onRemove: (path: string) => void;
   onClear: () => void;
 };
@@ -22,10 +24,19 @@ function matchesFilter(entry: LogEntry, query: string) {
   const q = query.toLowerCase();
   if (entry.path.toLowerCase().includes(q)) return true;
   if (entry.subject.toLowerCase().includes(q)) return true;
+  if (entry.flag != null && (`flag ${entry.flag}`.includes(q) || String(entry.flag) === q)) return true;
   return formatValue(entry.value).toLowerCase().includes(q);
 }
 
-export function LoggerPanel({ getEntries, version, selected, onRemove, onClear }: Props) {
+export function LoggerPanel({
+  getEntries,
+  version,
+  selected,
+  nextFlag,
+  onFlag,
+  onRemove,
+  onClear,
+}: Props) {
   const scroller = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [filter, setFilter] = useState("");
@@ -49,11 +60,12 @@ export function LoggerPanel({ getEntries, version, selected, onRemove, onClear }
 
   const download = useCallback(() => {
     const rows = getEntries();
-    const header = "timestamp,iso,path,nats_subject,value";
+    const header = "timestamp,iso,flag,path,nats_subject,value";
     const lines = rows.map((e) =>
       [
         String(e.timestamp),
         new Date(e.timestamp).toISOString(),
+        e.flag == null ? "" : String(e.flag),
         csvEscape(e.path),
         csvEscape(e.subject),
         csvEscape(formatValue(e.value)),
@@ -82,6 +94,9 @@ export function LoggerPanel({ getEntries, version, selected, onRemove, onClear }
         </div>
         <div className="log-controls">
           <span className="count-chip">{total.toLocaleString()} logs</span>
+          <button className="btn" type="button" onClick={onFlag}>
+            Flag {nextFlag}
+          </button>
           <button className="btn" onClick={download} disabled={total === 0}>
             Download CSV
           </button>
@@ -117,15 +132,16 @@ export function LoggerPanel({ getEntries, version, selected, onRemove, onClear }
         </div>
       )}
 
-      {selected.length === 0 ? (
-        <p className="hint">Tick any node in the tree to log that branch without a record limit.</p>
+      {total === 0 && selected.length === 0 ? (
+        <p className="hint">Tick any node in the tree to log that branch, or press Flag to mark a moment.</p>
       ) : total === 0 ? (
-        <p className="hint">Waiting for matching messages…</p>
+        <p className="hint">Waiting for matching messages… Press Flag to insert a numbered marker.</p>
       ) : count === 0 ? (
         <p className="hint">No log rows match this filter.</p>
       ) : (
         <>
           <div className="log-head">
+            <span>Flag</span>
             <span>Time</span>
             <span>Path</span>
             <span>Subject</span>
@@ -140,7 +156,8 @@ export function LoggerPanel({ getEntries, version, selected, onRemove, onClear }
               <div className="log-spacer" style={{ height: count * ROW }} />
               <div className="log-window" style={{ top: start * ROW }}>
                 {slice.map((entry) => (
-                  <div className="log-row" key={entry.id}>
+                  <div className={`log-row${entry.isFlag ? " flag-row" : ""}`} key={entry.id}>
+                    <span>{entry.flag == null ? "" : entry.flag}</span>
                     <span>{new Date(entry.timestamp).toLocaleTimeString()}</span>
                     <span title={entry.path}>{entry.path}</span>
                     <span title={entry.subject}>{entry.subject}</span>

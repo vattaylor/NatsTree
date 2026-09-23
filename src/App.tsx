@@ -14,6 +14,7 @@ import {
   type HistoryLimit,
   type TreeNode,
 } from "./tree";
+import { loadServer, saveServer } from "./settings";
 import type { LogEntry, NatsMessage } from "./types";
 import { useNatsBridge } from "./useNatsBridge";
 
@@ -28,12 +29,11 @@ export default function App() {
   const pendingFlash = useRef<Set<string>>(new Set());
   const pendingExpand = useRef<string[]>([]);
 
-  const [host, setHost] = useState(() =>
-    import.meta.env.VITE_STATIC === "true" ? "demo" : "127.0.0.1",
-  );
-  const [port, setPort] = useState("4222");
-  const [user, setUser] = useState("");
+  const [host, setHost] = useState(() => loadServer().host);
+  const [port, setPort] = useState(() => loadServer().port);
+  const [user, setUser] = useState(() => loadServer().user);
   const [pass, setPass] = useState("");
+  const flagSeq = useRef(0);
   const [query, setQuery] = useState("");
   const [tick, setTick] = useState(0);
   const [logVersion, setLogVersion] = useState(0);
@@ -90,6 +90,7 @@ export default function App() {
             path,
             subject: msg.subject,
             value: node.value,
+            flag: flagSeq.current || undefined,
           });
         }
       }
@@ -99,7 +100,7 @@ export default function App() {
     [flush],
   );
 
-  const { status, socketReady, connect, disconnect } = useNatsBridge(onMessage);
+  const { status, socketReady, connect, disconnect, direct } = useNatsBridge(onMessage);
 
   const leafCount = useMemo(() => countLeaves(rootRef.current), [tick]);
   const selectedNode = selectedPath ? findNode(rootRef.current, selectedPath) : null;
@@ -174,10 +175,31 @@ export default function App() {
     URL.revokeObjectURL(url);
   }, []);
 
+  const persistServer = useCallback((nextHost: string, nextPort: string, nextUser: string) => {
+    saveServer({ host: nextHost, port: nextPort, user: nextUser });
+  }, []);
+
+  const addFlag = useCallback(() => {
+    flagSeq.current += 1;
+    logsRef.current.push({
+      id: logId.current++,
+      timestamp: Date.now(),
+      path: "FLAG",
+      subject: "FLAG",
+      value: flagSeq.current,
+      flag: flagSeq.current,
+      isFlag: true,
+    });
+    setLogVersion((n) => n + 1);
+  }, []);
+
   const start = () => {
+    const nextHost = host.trim() || "127.0.0.1";
+    const nextPort = port.trim() || "4222";
+    persistServer(nextHost, nextPort, user);
     connect({
-      host: host.trim() || "127.0.0.1",
-      port: Number(port) || 4222,
+      host: nextHost,
+      port: Number(nextPort) || 4222,
       user: user.trim() || undefined,
       pass: pass || undefined,
     });
@@ -195,7 +217,9 @@ export default function App() {
       : status.error
         ? status.error
         : socketReady
-          ? "Idle"
+          ? direct
+            ? "Idle · browser WebSocket"
+            : "Idle"
           : "Bridge offline";
 
   return (
@@ -239,8 +263,11 @@ export default function App() {
             <input
               id="host"
               value={host}
-              onChange={(e) => setHost(e.target.value)}
-              placeholder="127.0.0.1 or demo"
+              onChange={(e) => {
+                setHost(e.target.value);
+                persistServer(e.target.value, port, user);
+              }}
+              placeholder={direct ? "nats host or demo" : "127.0.0.1 or demo"}
               autoComplete="off"
               disabled={status.connected || status.connecting}
             />
@@ -251,8 +278,11 @@ export default function App() {
               id="port"
               className="port"
               value={port}
-              onChange={(e) => setPort(e.target.value)}
-              placeholder="4222"
+              onChange={(e) => {
+                setPort(e.target.value);
+                persistServer(host, e.target.value, user);
+              }}
+              placeholder={direct ? "9222 or 8443" : "4222"}
               inputMode="numeric"
               disabled={status.connected || status.connecting}
             />
@@ -262,7 +292,10 @@ export default function App() {
             <input
               id="user"
               value={user}
-              onChange={(e) => setUser(e.target.value)}
+              onChange={(e) => {
+                setUser(e.target.value);
+                persistServer(host, port, e.target.value);
+              }}
               placeholder="optional"
               autoComplete="username"
               disabled={status.connected || status.connecting}
@@ -393,8 +426,11 @@ export default function App() {
             version={logVersion}
             selected={[...logged]}
             onRemove={toggleLog}
+            onFlag={addFlag}
+            nextFlag={flagSeq.current + 1}
             onClear={() => {
               logsRef.current = [];
+              flagSeq.current = 0;
               setLogVersion((n) => n + 1);
             }}
           />

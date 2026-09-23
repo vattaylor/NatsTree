@@ -19,4 +19,6 @@ export type LogEntry = {
   path: string;
   subject: string;
   value: unknown;
+  flag?: number;
+  isFlag?: boolean;
 };

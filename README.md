@@ -2,7 +2,7 @@
 
 NatsTree is a desktop and web app for watching a [NATS](https://nats.io) server. It subscribes to every subject (`>`), turns messages into a searchable tree, and lets you inspect live values, history, graphs, and unlimited CSV logs.
 
-Source: [github.com/vattaylor/NatsTree](https://github.com/vattaylor/NatsTree). Live demo: [vattaylor.github.io/NatsTree](https://vattaylor.github.io/NatsTree/).
+Source: [github.com/vattaylor/NatsTree](https://github.com/vattaylor/NatsTree).
 
 Browsers cannot speak NATS TCP, so NatsTree runs a small local bridge that opens the NATS connection for the UI.
 
@@ -21,17 +21,17 @@ Pre-built installers are on [GitHub Releases](https://github.com/vattaylor/NatsT
 
 Built files are in `release/`:
 
-- `NatsTree-1.0.0-linux-x86_64.AppImage` — runs without installing
-- `NatsTree-1.0.0-linux-amd64.deb` — installs into the system
+- `NatsTree-1.1.0-linux-x86_64.AppImage` — runs without installing
+- `NatsTree-1.1.0-linux-amd64.deb` — installs into the system
 
 ### AppImage (any distribution)
 
-1. Copy `NatsTree-1.0.0-linux-x86_64.AppImage` onto the machine.
+1. Copy `NatsTree-1.1.0-linux-x86_64.AppImage` onto the machine.
 2. Make it executable and run it:
 
 ```bash
-chmod +x NatsTree-1.0.0-linux-x86_64.AppImage
-./NatsTree-1.0.0-linux-x86_64.AppImage
+chmod +x NatsTree-1.1.0-linux-x86_64.AppImage
+./NatsTree-1.1.0-linux-x86_64.AppImage
 ```
 
 If the desktop asks to integrate the AppImage, you can accept that so it appears in the application menu.
@@ -39,7 +39,7 @@ If the desktop asks to integrate the AppImage, you can accept that so it appears
 ### Debian / Ubuntu package
 
 ```bash
-sudo dpkg -i NatsTree-1.0.0-linux-amd64.deb
+sudo dpkg -i NatsTree-1.1.0-linux-amd64.deb
 ```
 
 If `dpkg` reports missing dependencies:
@@ -66,12 +66,12 @@ sudo dpkg -r nats-tree
 
 Built files are in `release/`:
 
-- `NatsTree-1.0.0-win-x64-setup.exe` — installer (recommended)
-- `NatsTree-1.0.0-win-x64.zip` — portable copy, no install
+- `NatsTree-1.1.0-win-x64-setup.exe` — installer (recommended)
+- `NatsTree-1.1.0-win-x64.zip` — portable copy, no install
 
 ### Setup program
 
-1. Copy `NatsTree-1.0.0-win-x64-setup.exe` onto the Windows PC.
+1. Copy `NatsTree-1.1.0-win-x64-setup.exe` onto the Windows PC.
 2. Double-click it. Windows SmartScreen may warn because the file is not code-signed; choose **More info** → **Run anyway**.
 3. Confirm the install prompt. Files go to `%LOCALAPPDATA%\Programs\NatsTree` (no administrator account needed).
 4. Desktop and Start Menu shortcuts named **NatsTree** are created, then the app starts.
@@ -80,7 +80,7 @@ To uninstall, delete `%LOCALAPPDATA%\Programs\NatsTree` and the Desktop / Start 
 
 ### Portable zip
 
-1. Unzip `NatsTree-1.0.0-win-x64.zip`.
+1. Unzip `NatsTree-1.1.0-win-x64.zip`.
 2. Open the folder and double-click `NatsTree.exe`.
 
 ---
@@ -89,8 +89,8 @@ To uninstall, delete `%LOCALAPPDATA%\Programs\NatsTree` and the Desktop / Start 
 
 Built files are in `release/` (and on [GitHub Releases](https://github.com/vattaylor/NatsTree/releases)):
 
-- `NatsTree-1.0.0-mac-arm64.zip` — Apple Silicon (M1/M2/M3)
-- `NatsTree-1.0.0-mac-x64.zip` — Intel Macs
+- `NatsTree-1.1.0-mac-arm64.zip` — Apple Silicon (M1/M2/M3)
+- `NatsTree-1.1.0-mac-x64.zip` — Intel Macs
 
 1. Download the zip that matches your Mac and unzip it.
 2. Drag **NatsTree** into **Applications**.
@@ -176,11 +176,14 @@ If the value is a number, use **Graph** to plot those samples.
 1. Tick one or more nodes in the tree (a parent logs every descendant).
 2. Matching updates are recorded with **no limit**. The counter shows how many rows have been stored.
 3. Use the Logger filter to show only rows whose path, subject, or value matches.
-4. The table lists time, path, NATS subject, and value (newest first).
-5. Click **Download CSV** to save everything recorded so far.
-6. **Clear** deletes the log rows (it does not stop logging). Remove a branch by unticking it or clicking **×** on its chip.
+4. The table lists flag, time, path, NATS subject, and value (newest first).
+5. Click **Flag** to insert a numbered marker (1, 2, 3…). Later log rows keep that flag number until the next flag. **Clear** resets the count.
+6. Click **Download CSV** to save everything recorded so far.
+7. **Clear** deletes the log rows (it does not stop logging). Remove a branch by unticking it or clicking **×** on its chip.
 
-CSV columns: `timestamp`, `iso`, `path`, `nats_subject`, `value`.
+CSV columns: `timestamp`, `iso`, `flag`, `path`, `nats_subject`, `value`.
+
+The last NATS server host, port, and user are stored in the browser and restored on the next visit.
 
 ---
 
@@ -204,9 +207,22 @@ The web UI talks to a local bridge on port `3847`. The packaged desktop app star
 
 ## GitHub Pages
 
-The static UI is published at [https://vattaylor.github.io/NatsTree/](https://vattaylor.github.io/NatsTree/). Use **Server** `demo` and **Connect** — GitHub Pages cannot open a NATS TCP connection. For a real server, run the desktop app or the Docker web service.
+The latest `main` build is published to [GitHub Pages](https://vattaylor.github.io/NatsTree/). That site talks to NATS **from the browser over WebSocket** — it is not limited to demo mode.
 
-Pushes to `main` build and deploy Pages via `.github/workflows/pages.yml`. In the GitHub repo, set **Settings → Pages → Source** to **GitHub Actions** if the site is not live yet.
+- Set **Server** to your NATS host and **Port** to the **WebSocket** port (often `9222`, or `8443` for TLS).
+- Use `wss://` automatically when the page is HTTPS. The NATS server must enable websocket (and TLS if you are on GitHub Pages).
+- Host `demo` still works without a server.
+
+Example nats-server websocket block:
+
+```
+websocket {
+  port: 9222
+  no_tls: true
+}
+```
+
+On GitHub Pages (HTTPS), a local `ws://` server is blocked by the browser. Use a TLS websocket (`wss://`) or the desktop / Docker app for a local TCP server on port `4222`.
 
 ---
 
