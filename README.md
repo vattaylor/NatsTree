@@ -2,6 +2,10 @@
 
 NatsTree is a desktop and web app for watching a [NATS](https://nats.io) server. It subscribes to every subject (`>`), turns messages into a searchable tree, and lets you inspect live values, history, graphs, and unlimited CSV logs.
 
+**User manual:** [USER_MANUAL.md](USER_MANUAL.md) — connecting, tree, values, graphs, logger, flags, and troubleshooting.
+
+**Demo:** [https://vattaylor.github.io/NatsTree/](https://vattaylor.github.io/NatsTree/)
+
 Source: [github.com/vattaylor/NatsTree](https://github.com/vattaylor/NatsTree).
 
 Browsers cannot speak NATS TCP, so NatsTree runs a small local bridge that opens the NATS connection for the UI.
@@ -130,6 +134,8 @@ That writes a `.dmg` and a `.zip` under `release/`. Open the `.dmg` and drag **N
 ---
 
 ## How to use
+
+Full step-by-step instructions are in the **[user manual](USER_MANUAL.md)**.
 
 The window has a connection bar at the top and three columns: **Subjects**, **Value**, and **Logger**.
 
