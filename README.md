@@ -1,6 +1,12 @@
 # NatsTree
 
-NatsTree is a desktop and web app for watching a [NATS](https://nats.io) server. It subscribes to every subject (`>`), turns messages into a searchable tree, and lets you inspect live values, history, graphs, and unlimited CSV logs.
+NatsTree is a desktop and web app for watching a [NATS](https://nats.io) server in real time. It subscribes to every subject (`>`), splits each name on `.`, and unfolds JSON objects and arrays into a searchable tree so you can browse live telemetry the way you would a folder of nested fields.
+
+The window has a connection bar and three columns. **Subjects** is the live tree: new paths appear as messages arrive, rows flash on update, and you can search by path or value, expand or collapse branches, tick nodes to log them, hide everything except ticked items, or export the current structure as JSON. **Value** shows the leaf you clicked — path, original NATS subject, current value, last-updated time, hit count, and average time between samples. You can keep the last 10 to 100,000 samples for that leaf, list them in a history table, and plot numbers as a graph that expands to fill the page. **Logger** records every matching update with no row limit, filters the table, inserts numbered flags to mark moments in a test, and downloads the whole stream as CSV.
+
+Connect with a host, port, and optional username and password. The last host, port, and user are remembered for the next visit (the password is not stored). Set the host to `demo` to run sample vehicle telemetry with no NATS server. Use the [desktop app](https://github.com/vattaylor/NatsTree/releases) or [Docker](docker/README.md) for a normal TCP server (usually port `4222`), or the [web demo](https://vattaylor.github.io/NatsTree/) if the server exposes NATS WebSocket.
+
+![NatsTree screenshot](screen.png)
 
 **User manual:** [USER_MANUAL.md](USER_MANUAL.md) — connecting, tree, values, graphs, logger, flags, and troubleshooting.
 
